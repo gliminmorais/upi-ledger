@@ -1,6 +1,6 @@
 # UPI Ledger
 
-Current version: **0.3.1** - Tabular PDF reports and multiple category budgets.
+Current version: **0.4.0** - Split payments and friend repayments.
 
 A personal Android expense tracker that turns shared payment receipts into organized spending records.
 
@@ -22,13 +22,23 @@ Share a BHIM or Google Pay receipt image to **UPI Ledger**, review the extracted
 - Use a translucent glass-style interface with reduced-motion support.
 - Create monthly subscriptions manually; record due renewals automatically when Ledger opens.
 
+## Split payments and repayments
+
+When adding or editing a payment, enable **Split payment**. Keep the full amount paid in the main amount field and enter **My bill / my share**. Only your share counts in spending, category budgets, trends and vendor spending totals. Your share can be zero if the entire bill was for friends.
+
+Home shows repayments received in the selected month, received all time and money still to receive across all split payments. Select **Record a friend's repayment**, choose the original split payment, then enter the friend's name, amount and received date. Each friend or instalment is a separate record. History lets you remove an incorrect repayment. Repayments are entered manually; Ledger does not detect incoming bank payments.
+
+For example, a payment of INR 900 with your own bill of INR 300 counts as INR 300 spent. Two repayments of INR 200 and INR 400 clear the INR 600 friends' share without reducing your INR 300 spending again. Repayments cannot exceed the friends' share. Deleting an original payment deletes its linked repayment history.
+
+PDF reports show full payments, your spending and friends' shares, plus a separate table of repayments received within the selected date range. CSV distinguishes Payment and Repayment rows; sum **Your spending (INR)** for expenses and **Received (INR)** for repayments. Repayments for an earlier month's bill appear in the month they were received. JSON backups include split details and repayment history; versions 1-4 still restore.
+
 ## Monthly budgets and exports
 
 Open **Insights > Monthly budgets > Manage** (or Settings > Monthly budgets). Choose a month and enter rupee limits for multiple categories on the same screen, then select **Save all budgets**. The card shows saved spending, remaining money or overspend. Limits belong to individual calendar months; set zero to remove a limit. Changing a transaction category updates the matching budget totals.
 
-Use **Export spending report** in Insights or Settings. Select start/end dates and choose **CSV (opens in Excel)** or **PDF report**, then choose where Android saves the file. CSV includes each payment's date, time, vendor, category, debit amount, remarks, transaction ID and source. PDF uses landscape tables with spending totals, category summaries and paginated payments. Table headers repeat on each page, and long remarks wrap. PDF omits budget limits, remaining balances and transaction IDs. Automatic subscription entries are included.
+Use **Export spending report** in Insights or Settings. Select start/end dates and choose **CSV (opens in Excel)** or **PDF report**, then choose where Android saves the file. CSV includes the record type, date, time, vendor, category, full paid amount, your spending, friends' share, repayments received, friend name, remarks, source and original payment date. PDF uses landscape tables with spending totals, category summaries and paginated payments. Table headers repeat on each page, and long remarks wrap. PDF omits budget limits, budget balances and transaction IDs. Automatic subscription entries are included.
 
-JSON backups now include budgets. Existing version 1-3 backups still restore. CSV and PDF are reports; use the JSON backup when moving or restoring Ledger data.
+JSON backups now include budgets. Existing version 1-4 backups still restore. CSV and PDF are reports; use the JSON backup when moving or restoring Ledger data.
 
 ## Monthly subscriptions
 

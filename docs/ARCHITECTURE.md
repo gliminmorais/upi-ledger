@@ -31,3 +31,9 @@ Schema version 3 adds subscriptions and links each generated payment to its plan
 SQLite schema 4 adds a budgets table keyed by calendar month and category. Limits and expenses use integer paise. Migration creates the table without rewriting existing records. Backup version 4 includes budgets; restore continues to accept versions 1-3.
 
 Reports use a user-selected inclusive date range. CSV is UTF-8 with a BOM, quoted fields and escaping of formula-leading text. Native Android PdfDocument renders landscape spending tables with repeated column headers and wrapped cells. The PDF excludes budget information and transaction IDs. Multi-category budget changes commit in one database transaction. Both exports use Android Create Document so the user chooses the destination without broad storage permissions. Reports contain saved structured fields; no receipt images or raw OCR text are included.
+
+## Split payments and repayments (0.4.0)
+
+Schema 5 adds entries.own_paise (-1 for an unsplit payment) and a repayments table linked to the original entry with delete cascade. The original entries.paise amount remains the full vendor payment. Entry.spent() returns the personal share or full amount for older unsplit records. The bridge supplies personal spending as paise and the full payment as paidPaise, so existing summaries, charts and budgets consistently use personal spending.
+
+Repayment creation runs in a transaction and checks that the total received cannot exceed the friends' share. Payment edits cannot invalidate existing repayment amounts or dates. Backup version 5 includes repayments; older versions retain their full original spending. PDF/CSV distinguish payment dates and repayment receipt dates. Incoming repayments do not subtract from personal spending again.

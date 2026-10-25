@@ -1,8 +1,13 @@
 # Source-package validation
 
-Version 0.3.1, prepared on 25 October 2026.
+Version 0.4.0, prepared on 25 October 2026.
 
 ## Passed locally
+
+- Split payment and separate repayment forms, own-share spending and Home totals.
+- Schema 4-to-5 migration, version 4 backup restore, split backup round-trip and invalid repayment rollback.
+- PDF/CSV reconciliation: INR 900 paid, INR 300 spent, INR 600 repaid by two friends.
+- Split PDF tables rendered and visually checked.
 
 - Clean-source Gradle wrapper build using ANDROID_HOME, without local.properties.
 - Parser/calendar unit tests and Android lint.

@@ -32,7 +32,7 @@ public final class LedgerChecks extends Instrumentation {
         Bundle result=new Bundle();
         getTargetContext().deleteDatabase("integration-tests.db");
         try(LedgerDb db=new LedgerDb(getTargetContext(),"integration-tests.db")) {
-            SubscriptionChecks.run(getTargetContext());ReportChecks.run(getTargetContext());
+            SubscriptionChecks.run(getTargetContext());ReportChecks.run(getTargetContext());SplitChecks.run(getTargetContext());
             LedgerDb.Entry first=entry("Food","111111111111");db.save(first,false,"");
             db.save(entry("Education & stationery","222222222222"),false,"Dynamic checkout");
             check(db.resolve("Swiggy Instamart").category.equals("Food"),"Override changed vendor default");
@@ -109,6 +109,14 @@ public final class LedgerChecks extends Instrumentation {
 
             check(evaluate(web,"document.querySelector('[data-action=report]').click();document.querySelector('#reportForm [name=format]').options.length===2").equals("true"),"CSV/PDF export options missing");
             evaluate(web,"closeSheet();true");
+            evaluate(web,"openEditor({vendor:'Split UI Dinner',amount:'900',category:'Food'});document.querySelector('[name=split]').checked=true;document.querySelector('[name=split]').dispatchEvent(new Event('change',{bubbles:true}));document.querySelector('[name=ownAmount]').value='300';submitPayment(true);true");
+            long splitDeadline=android.os.SystemClock.uptimeMillis()+5000;while(android.os.SystemClock.uptimeMillis()<splitDeadline&&!db.entries().stream().anyMatch(e->e.vendor.equals("Split UI Dinner")))android.os.SystemClock.sleep(50);
+            LedgerDb.Entry split=db.entries().stream().filter(e->e.vendor.equals("Split UI Dinner")).findFirst().get();check(split.paise==90000&&split.spent()==30000,"Split editor saved wrong own share");
+            check(evaluate(web,"navigate('home');document.body.innerText.includes('Friends paid you back')").equals("true"),"Home repayment summary missing");
+            for(String friend:new String[]{"Alice","Bob"}){evaluate(web,"repaymentEditor("+split.id+");document.querySelector('#repaymentForm [name=from]').value='"+friend+"';document.querySelector('#repaymentForm [name=amount]').value='"+(friend.equals("Alice")?"200":"400")+"';document.querySelector('#repaymentForm').dispatchEvent(new Event('submit',{bubbles:true,cancelable:true}));true");long due=android.os.SystemClock.uptimeMillis()+5000;long expected=friend.equals("Alice")?20000:60000;while(android.os.SystemClock.uptimeMillis()<due&&db.received(split.id)<expected)android.os.SystemClock.sleep(50);check(db.received(split.id)==expected,"Repayment form failed for "+friend);}
+            check(evaluate(web,"data.entries.find(e=>e.id==="+split.id+").paise===30000&&data.repayments.reduce((n,r)=>n+r.paise,0)===60000").equals("true"),"Repayments changed spending or Home totals");
+            evaluate(web,"navigate('home');true");android.os.SystemClock.sleep(600);android.graphics.Bitmap splitScreen=getUiAutomation().takeScreenshot();if(splitScreen!=null){try(java.io.FileOutputStream out=new java.io.FileOutputStream(new java.io.File(getTargetContext().getExternalFilesDir(null),"split-home-preview.png"))){splitScreen.compress(android.graphics.Bitmap.CompressFormat.PNG,100,out);}splitScreen.recycle();}
+            check(evaluate(web,"document.querySelector('[data-action=edit][data-id=\""+split.id+"\"]').click();document.querySelector('[name=amount]').value==='900.00'&&document.querySelector('[name=ownAmount]').value==='300.00'").equals("true"),"Editing a split replaced full payment with own share");
             runOnMainSync(()->activity.finish());
             result.putString("stream","PASS: vendor overrides, aliases, duplicate IDs, remarks, backup rollback, generated receipt OCR examples, offline glass UI, navigation, editor controls, monthly budgets, CSV/PDF export and native save validation.");finish(-1,result);
         }catch(Throwable e){result.putString("stream","FAIL: "+e.toString());finish(0,result);}

@@ -51,3 +51,7 @@ Subscription checks cover monthly posting, catch-up, cancellation, month-end/lea
 ## Budget and report checks
 
 ReportChecks uses an isolated database to verify monthly budget update/removal, schema 3 upgrade, version 4 backup round-trip, version 3 compatibility and restore rollback. It checks CSV quoting/formula escaping/exact decimals and generates multi-page and empty PDFs on Android. LedgerChecks also opens the budget editor, saves a limit and verifies remaining amounts and both export formats in the offline WebView.
+
+## Split checks
+
+SplitChecks verifies schema 4 migration, older backups, zero own share, partial/named repayments, overpayment rejection, repayment date bounds, protected edits, corrections, cascade deletion and backup rollback. LedgerChecks exercises the actual split-payment form, two separate repayment submissions, Home totals and reopening the full paid amount. Sample PDF/CSV exports reconcile INR 900 paid, INR 300 personal spending and INR 600 received.

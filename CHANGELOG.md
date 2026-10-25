@@ -1,5 +1,14 @@
 # Changelog
 
+## 0.4.0
+
+- Split full vendor payments into your own spending and friends' share.
+- Record separate named and dated repayments, including partial repayments.
+- Home shows received amounts and outstanding friend shares.
+- Charts, category budgets, vendor totals and spending use only your share.
+- PDF and CSV separate spending from money received, without double counting.
+- Schema/backup 5 preserves older records and includes split and repayment history.
+
 ## 0.3.1
 
 - Edit and save limits for multiple categories in one monthly budget form.
