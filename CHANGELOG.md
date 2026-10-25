@@ -1,5 +1,12 @@
 # Changelog
 
+## 0.3.1
+
+- Edit and save limits for multiple categories in one monthly budget form.
+- Save all edited budgets atomically; validation errors retain existing values.
+- Landscape PDF spending tables with wrapped cells and repeated headers.
+- PDF excludes budget limits, remaining amounts and transaction IDs.
+
 ## 0.3.0
 
 - Monthly category budgets with remaining and overspend indicators.

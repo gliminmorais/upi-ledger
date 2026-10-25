@@ -1,6 +1,6 @@
 # Source-package validation
 
-Version 0.3.0, prepared on 25 October 2026.
+Version 0.3.1, prepared on 25 October 2026.
 
 ## Passed locally
 
@@ -12,7 +12,8 @@ Version 0.3.0, prepared on 25 October 2026.
 - Monthly subscription checks: due-date posting, missed-month catch-up, cancellation, month-end dates, duplicate prevention and backup compatibility.
 - Budget schema 3-to-4 migration, per-month limits, updates/removal, backup round-trip and invalid restore rollback.
 - CSV exact decimal values, UTF-8 marker, formula escaping, quoted remarks; multi-page/empty PDF generation.
-- PDF sample rendered and visually checked; 90 payments with long remarks produced 14 pages.
+- Landscape PDF tables checked for repeated headings, wrapped remarks and oversized-row continuation.
+- Multi-category budget form saves and reloads several limits; invalid bulk updates roll back together.
 - APK asset verification for the payment confirmation wording.
 - Python-rendered README diagrams and sample preview images.
 - Private-data/source-file audit and archive integrity.

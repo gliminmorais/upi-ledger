@@ -1,6 +1,6 @@
 # UPI Ledger
 
-Current version: **0.3.0** - Monthly budgets and spending reports.
+Current version: **0.3.1** - Tabular PDF reports and multiple category budgets.
 
 A personal Android expense tracker that turns shared payment receipts into organized spending records.
 
@@ -24,9 +24,9 @@ Share a BHIM or Google Pay receipt image to **UPI Ledger**, review the extracted
 
 ## Monthly budgets and exports
 
-Open **Insights > Monthly budgets > Manage** (or Settings > Monthly budgets). Choose a month, category and rupee limit. The card shows saved spending, remaining money or overspend. Limits belong to individual calendar months; set zero to remove a limit. Changing a transaction category updates the matching budget totals.
+Open **Insights > Monthly budgets > Manage** (or Settings > Monthly budgets). Choose a month and enter rupee limits for multiple categories on the same screen, then select **Save all budgets**. The card shows saved spending, remaining money or overspend. Limits belong to individual calendar months; set zero to remove a limit. Changing a transaction category updates the matching budget totals.
 
-Use **Export spending report** in Insights or Settings. Select start/end dates and choose **CSV (opens in Excel)** or **PDF report**, then choose where Android saves the file. CSV includes each payment's date, time, vendor, category, debit amount, remarks, transaction ID and source. PDF includes totals, category summaries, budgets and paginated payment details. Partial-month budget comparisons use only the dates in the report. Automatic subscription entries are included.
+Use **Export spending report** in Insights or Settings. Select start/end dates and choose **CSV (opens in Excel)** or **PDF report**, then choose where Android saves the file. CSV includes each payment's date, time, vendor, category, debit amount, remarks, transaction ID and source. PDF uses landscape tables with spending totals, category summaries and paginated payments. Table headers repeat on each page, and long remarks wrap. PDF omits budget limits, remaining balances and transaction IDs. Automatic subscription entries are included.
 
 JSON backups now include budgets. Existing version 1-3 backups still restore. CSV and PDF are reports; use the JSON backup when moving or restoring Ledger data.
 

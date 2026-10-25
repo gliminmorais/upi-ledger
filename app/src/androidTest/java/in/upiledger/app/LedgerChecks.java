@@ -99,6 +99,14 @@ public final class LedgerChecks extends Instrumentation {
             check(evaluate(web,"document.querySelector('[data-action=budgets]').click();!!document.querySelector('#budgetForm')").equals("true"),"Budget editor missing");
             JSONObject budget=new JSONObject();budget.put("month",java.time.LocalDate.now().toString().substring(0,7));budget.put("category","Food");budget.put("amount","50.00");bridge.saveBudget(budget.toString());
             check(evaluate(web,"document.body.innerText.includes('remaining')").equals("true"),"Budget remaining did not render");
+            check(evaluate(web,"document.querySelector('[data-action=budgets]').click();document.querySelectorAll('[data-budget-category]').length>2").equals("true"),"Multi-category budget fields missing");
+            evaluate(web,"document.querySelector('[data-budget-category=Food]').value='75';document.querySelector('[data-budget-category=Shopping]').value='250';document.querySelector('#budgetForm').dispatchEvent(new Event('submit',{bubbles:true,cancelable:true}));true");
+            long budgetDeadline=android.os.SystemClock.uptimeMillis()+5000;while(android.os.SystemClock.uptimeMillis()<budgetDeadline&&db.budgets().size()<2)android.os.SystemClock.sleep(50);
+            check(db.budgets().stream().anyMatch(b->b.category.equals("Food")&&b.paise==7500)&&db.budgets().stream().anyMatch(b->b.category.equals("Shopping")&&b.paise==25000),"Multi-category form did not save both limits");
+            evaluate(web,"editBudgets();true");
+            check(evaluate(web,"document.querySelector('[data-budget-category=Food]').value==='75.00'&&document.querySelector('[data-budget-category=Shopping]').value==='250.00'").equals("true"),"Budget editor lost saved category amounts");
+            android.os.SystemClock.sleep(300);android.graphics.Bitmap budgetScreen=getUiAutomation().takeScreenshot();if(budgetScreen!=null){try(java.io.FileOutputStream out=new java.io.FileOutputStream(new java.io.File(getTargetContext().getExternalFilesDir(null),"multi-budget-preview.png"))){budgetScreen.compress(android.graphics.Bitmap.CompressFormat.PNG,100,out);}budgetScreen.recycle();}evaluate(web,"closeSheet();true");
+
             check(evaluate(web,"document.querySelector('[data-action=report]').click();document.querySelector('#reportForm [name=format]').options.length===2").equals("true"),"CSV/PDF export options missing");
             evaluate(web,"closeSheet();true");
             runOnMainSync(()->activity.finish());
