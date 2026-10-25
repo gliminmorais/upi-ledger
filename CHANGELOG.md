@@ -1,5 +1,10 @@
 # Changelog
 
+## 0.4.1
+
+- Display dates as DD-MM-YY throughout the interface and PDF/CSV reports.
+- Keep ISO storage and native calendar pickers compatible with existing records.
+
 ## 0.4.0
 
 - Split full vendor payments into your own spending and friends' share.

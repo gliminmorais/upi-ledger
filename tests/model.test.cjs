@@ -20,3 +20,6 @@ assert.equal(M.nextRenewal('2028-01-31',31),'2028-02-29');
 assert.deepEqual(M.dueRenewals({active:true,nextDue:'2027-01-31',renewalDay:31},'2027-03-31'),['2027-01-31','2027-02-28','2027-03-31']);
 assert.deepEqual(M.dueRenewals({active:false,nextDue:'2027-01-31',renewalDay:31},'2027-03-31'),[]);
 console.log('PASS: date ranges, partial-period comparisons, historical months, leap-month limits, category overrides and daily totals.');
+
+assert.equal(require("../app/src/main/assets/ui/model.js").displayDate("2026-10-05"),"05-10-26");
+assert.equal(require("../app/src/main/assets/ui/model.js").displayDate("2028-02-29"),"29-02-28");

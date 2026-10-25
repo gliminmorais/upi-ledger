@@ -90,6 +90,7 @@ public final class LedgerChecks extends Instrumentation {
             check(evaluate(web,"document.querySelector('[name=remarks]') !== null && document.querySelector('[name=setDefault]').checked === false").equals("true"),"Remarks or override controls missing");
             check(evaluate(web,"document.querySelector('[name=confirmed]') === null").equals("true"),"Unwanted success checkbox still shown");
             check(evaluate(web,"!!document.querySelector('select[name=category] option[value=__create__]')").equals("true"),"Create category option missing");
+            check(evaluate(web,"document.querySelector('[name=date]').value===data.today&&document.querySelector('[name=date]').parentElement.querySelector('.date-display').textContent===LedgerModel.displayDate(data.today)").equals("true"),"Date display or stored date value incorrect");
             java.lang.reflect.Field database=MainActivity.class.getDeclaredField("db");database.setAccessible(true);database.set(activity,db);
             MainActivity.Bridge bridge=activity.new Bridge();
             JSONObject invalid=new JSONObject();invalid.put("vendor","Native Test");invalid.put("amount","0.001");invalid.put("date","2026-10-24");invalid.put("time","12:30");invalid.put("category","Food");

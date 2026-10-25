@@ -1,6 +1,6 @@
 # UPI Ledger
 
-Current version: **0.4.0** - Split payments and friend repayments.
+Current version: **0.4.1** - Dates displayed as DD-MM-YY.
 
 A personal Android expense tracker that turns shared payment receipts into organized spending records.
 
@@ -21,6 +21,8 @@ Share a BHIM or Google Pay receipt image to **UPI Ledger**, review the extracted
 - Export and restore JSON backups, including custom categories and vendors.
 - Use a translucent glass-style interface with reduced-motion support.
 - Create monthly subscriptions manually; record due renewals automatically when Ledger opens.
+
+Dates in the interface, PDF reports and CSV exports use **DD-MM-YY** (for example, 25-10-26). Stored records and JSON backups keep ISO dates for sorting and compatibility.
 
 ## Split payments and repayments
 

@@ -1,8 +1,11 @@
 # Source-package validation
 
-Version 0.4.0, prepared on 25 October 2026.
+Version 0.4.1, prepared on 25 October 2026.
 
 ## Passed locally
+
+- DD-MM-YY display formatting, including leading zeros and leap days; original ISO input values retained.
+- Formatted dates in PDF and CSV exports.
 
 - Split payment and separate repayment forms, own-share spending and Home totals.
 - Schema 4-to-5 migration, version 4 backup restore, split backup round-trip and invalid repayment rollback.
