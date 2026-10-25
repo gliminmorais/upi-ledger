@@ -1,0 +1,41 @@
+# Android Studio and generated build files
+.gradle/
+.idea/
+**/build/
+.cxx/
+.externalNativeBuild/
+*.iml
+captures/
+
+# Machine-specific SDK configuration
+local.properties
+
+# Signing material and secrets
+*.jks
+*.keystore
+key.properties
+keystore.properties
+.env
+.env.*
+!.env.example
+google-services.json
+
+# Payment data, private fixtures and local artifacts
+*.db
+*.db-*
+*.sqlite
+*.sqlite3
+private-fixtures/
+app/src/androidTest/assets/
+deliverables/
+preview/
+*.apk
+*.aab
+*.apks
+*.hprof
+*.log
+
+# Operating system files
+.DS_Store
+Thumbs.db
+Desktop.ini

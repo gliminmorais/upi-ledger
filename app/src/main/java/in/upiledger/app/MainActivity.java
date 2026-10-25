@@ -1,0 +1,80 @@
+
+package in.upiledger.app;
+import android.app.*;
+import android.content.*;
+import android.graphics.Color;
+import android.net.Uri;
+import android.os.*;
+import android.view.*;
+import android.webkit.*;
+import com.google.mlkit.vision.common.InputImage;
+import com.google.mlkit.vision.text.*;
+import com.google.mlkit.vision.text.latin.TextRecognizerOptions;
+import org.json.*;
+import java.io.*;
+import java.math.BigDecimal;
+import java.nio.charset.StandardCharsets;
+import java.time.*;
+import java.time.format.DateTimeFormatter;
+import java.util.*;
+import java.util.concurrent.*;
+
+/** All UI assets are local. The bridge cannot load remote pages or arbitrary files. */
+public final class MainActivity extends Activity {
+    private LedgerDb db; private WebView web; private TextRecognizer recognizer;
+    private final ExecutorService worker=Executors.newSingleThreadExecutor();
+    private boolean ready,importing; private Uri pendingShare; private String backupText;
+    @Override public void onCreate(Bundle state){
+        super.onCreate(state);db=new LedgerDb(this);recognizer=TextRecognition.getClient(TextRecognizerOptions.DEFAULT_OPTIONS);
+        getWindow().setStatusBarColor(Color.rgb(240,245,245));getWindow().setNavigationBarColor(Color.rgb(239,245,243));
+        getWindow().getDecorView().setSystemUiVisibility(View.SYSTEM_UI_FLAG_LIGHT_STATUS_BAR|View.SYSTEM_UI_FLAG_LIGHT_NAVIGATION_BAR);
+        getWindow().setSoftInputMode(WindowManager.LayoutParams.SOFT_INPUT_ADJUST_RESIZE);
+        web=new WebView(this);web.setBackgroundColor(Color.rgb(240,245,245));setContentView(web);
+        if(Build.VERSION.SDK_INT>=33)getOnBackInvokedDispatcher().registerOnBackInvokedCallback(android.window.OnBackInvokedDispatcher.PRIORITY_DEFAULT,()->{if(ready)js("window.handleBack()");else finish();});
+        web.setOnApplyWindowInsetsListener((v,insets)->{if(Build.VERSION.SDK_INT>=30){android.graphics.Insets b=insets.getInsets(WindowInsets.Type.systemBars());v.setPadding(b.left,b.top,b.right,b.bottom);}else v.setPadding(insets.getSystemWindowInsetLeft(),insets.getSystemWindowInsetTop(),insets.getSystemWindowInsetRight(),insets.getSystemWindowInsetBottom());return insets;});
+        web.getSettings().setJavaScriptEnabled(true);web.getSettings().setAllowFileAccess(false);web.getSettings().setAllowContentAccess(false);web.getSettings().setBlockNetworkLoads(true);web.getSettings().setMixedContentMode(WebSettings.MIXED_CONTENT_NEVER_ALLOW);
+        web.addJavascriptInterface(new Bridge(),"Ledger");web.setWebViewClient(new WebViewClient(){
+            @Override public boolean shouldOverrideUrlLoading(WebView v,WebResourceRequest r){return true;}
+            @Override public WebResourceResponse shouldInterceptRequest(WebView v,WebResourceRequest request){Uri u=request.getUrl();String path=u.getPath();if("https".equals(u.getScheme())&&"ledger.local".equals(u.getHost())&&Arrays.asList("/index.html","/style.css","/model.js","/subscriptions.js","/ui.js").contains(path))try{return new WebResourceResponse(path.endsWith(".css")?"text/css":path.endsWith(".js")?"application/javascript":"text/html","UTF-8",getAssets().open("ui"+path));}catch(IOException ignored){}return new WebResourceResponse("text/plain","UTF-8",new ByteArrayInputStream(new byte[0]));}
+            @Override public void onPageFinished(WebView v,String url){ready=true;refresh();if(pendingShare!=null){Uri uri=pendingShare;pendingShare=null;readReceipt(uri);}}
+        });web.loadUrl("https://ledger.local/index.html");handleShare(getIntent());
+    }
+    @Override protected void onDestroy(){ready=false;recognizer.close();worker.shutdown();web.removeJavascriptInterface("Ledger");web.destroy();super.onDestroy();}
+    @Override protected void onResume(){super.onResume();if(ready)refresh();}
+    @Override protected void onNewIntent(Intent i){super.onNewIntent(i);setIntent(i);handleShare(i);}
+    // Android 13+ uses the registered callback; this override supports Android 8–12 only.
+    @android.annotation.SuppressLint("GestureBackNavigation")
+    @Override public void onBackPressed(){if(ready)js("window.handleBack()");else super.onBackPressed();}
+    private void handleShare(Intent i){if(Intent.ACTION_SEND.equals(i.getAction())&&i.getType()!=null&&i.getType().startsWith("image/")){Uri u=i.getParcelableExtra(Intent.EXTRA_STREAM);if(u!=null){if(ready)readReceipt(u);else pendingShare=u;}i.setAction(null);i.removeExtra(Intent.EXTRA_STREAM);i.setClipData(null);}}
+    private void js(String code){runOnUiThread(()->{if(!isDestroyed()&&ready)web.evaluateJavascript(code,null);});}
+    private void notice(String s){js("window.notify("+JSONObject.quote(s)+")");}
+    private void refresh(){try{db.postDueSubscriptions(LocalDate.now().toString());JSONObject d=new JSONObject();JSONArray entries=new JSONArray(),vendors=new JSONArray();for(LedgerDb.Entry e:db.entries()){JSONObject j=new JSONObject();j.put("id",e.id);j.put("vendorId",e.vendorId);j.put("vendor",e.vendor);j.put("paise",e.paise);j.put("category",e.category);j.put("date",e.date);j.put("time",e.time);j.put("remarks",e.remarks);j.put("reference",e.reference);j.put("source",e.source);entries.put(j);}for(LedgerDb.Vendor v:db.vendors()){JSONObject j=new JSONObject();j.put("id",v.id);j.put("name",v.name);j.put("category",v.category);vendors.put(j);}JSONArray subscriptions=new JSONArray();for(LedgerDb.Subscription sub:db.subscriptions()){JSONObject row=new JSONObject();row.put("id",sub.id);row.put("name",sub.name);row.put("paise",sub.paise);row.put("nextDue",sub.nextDue);row.put("renewalDay",sub.renewalDay);row.put("active",sub.active);row.put("remarks",sub.remarks);subscriptions.put(row);}d.put("subscriptions",subscriptions);d.put("entries",entries);d.put("vendors",vendors);d.put("categories",new JSONArray(db.categories()));d.put("today",LocalDate.now().toString());js("window.receiveData("+d+")");}catch(Exception e){notice("Could not load records.");}}
+    final class Bridge {
+        @JavascriptInterface public void saveSubscription(String json){try{
+            JSONObject j=new JSONObject(json);LedgerDb.Subscription sub=new LedgerDb.Subscription();sub.id=j.optLong("id",0);sub.name=j.getString("name").trim();sub.vendor=sub.name;sub.category="Subscription";sub.paise=new BigDecimal(j.getString("amount")).movePointRight(2).longValueExact();sub.nextDue=LocalDate.parse(j.getString("nextDue")).toString();sub.renewalDay=j.getInt("renewalDay");sub.active=j.optBoolean("active",true);sub.remarks=j.optString("remarks","");db.saveSubscription(sub);refresh();js("window.savedSubscription()");
+        }catch(IllegalArgumentException e){notice(e.getMessage());}catch(Exception e){notice("Check the subscription amount and renewal date.");}}
+        @JavascriptInterface public void cancelSubscription(long id){runOnUiThread(()->new AlertDialog.Builder(MainActivity.this).setTitle("Cancel subscription in Ledger?").setMessage("Future automatic entries will stop. Past payments stay saved. This does not cancel the service or its bank autopay.").setNegativeButton("Keep active",null).setPositiveButton("Cancel subscription",(a,b)->{db.cancelSubscription(id);refresh();js("window.savedSubscription()");}).show());}
+        @JavascriptInterface public void requestData(){refresh();}
+        @JavascriptInterface public void createCategory(String name){try{db.addCategory(name);refresh();js("window.createdCategory("+JSONObject.quote(name.trim())+")");}catch(IllegalArgumentException e){notice(e.getMessage());}catch(Exception e){notice("Could not create this category.");}}
+        @JavascriptInterface public void importImage(){runOnUiThread(()->{Intent i=new Intent(Intent.ACTION_OPEN_DOCUMENT);i.setType("image/*");i.addCategory(Intent.CATEGORY_OPENABLE);startActivityForResult(i,10);});}
+        @JavascriptInterface public String resolveVendor(String name){try{LedgerDb.Vendor v=db.resolve(name);if(v==null)return "null";JSONObject j=new JSONObject();j.put("name",v.name);j.put("category",v.category);return j.toString();}catch(Exception e){return "null";}}
+        @JavascriptInterface public void savePayment(String json){try{
+            JSONObject j=new JSONObject(json);LedgerDb.Entry e=new LedgerDb.Entry();e.id=j.optLong("id",0);e.vendor=j.getString("vendor").trim();if(e.vendor.isEmpty()||e.vendor.length()>200)throw new IllegalArgumentException("Enter a vendor name (up to 200 characters).");
+            e.paise=new BigDecimal(j.getString("amount")).movePointRight(2).longValueExact();if(e.paise<=0||e.paise>100000000000L)throw new IllegalArgumentException("Enter a positive amount with up to 2 decimal places.");
+            e.date=LocalDate.parse(j.getString("date")).toString();e.time=LocalTime.parse(j.getString("time")).format(DateTimeFormatter.ofPattern("HH:mm"));if(LocalDate.parse(e.date).isAfter(LocalDate.now()))throw new IllegalArgumentException("Payment date cannot be in the future.");e.category=j.getString("category");if(!db.hasCategory(e.category))throw new IllegalArgumentException("Choose a category.");
+            e.remarks=j.optString("remarks","");e.reference=j.optString("reference","").trim();e.source=j.optString("source","Manual");if(e.remarks.length()>2000||e.reference.length()>100)throw new IllegalArgumentException("Remarks or reference are too long.");if(db.duplicate(e.reference,e.id))throw new IllegalArgumentException("This transaction ID is already saved.");
+            if(!j.optBoolean("allowSimilar",false))for(LedgerDb.Entry prior:db.entries())if(prior.id!=e.id&&prior.vendor.equalsIgnoreCase(e.vendor)&&prior.paise==e.paise&&prior.date.equals(e.date)){js("window.similarPayment()");return;}
+            db.save(e,j.optBoolean("setDefault",false),j.optBoolean("rememberAlias",false)?j.optString("originalVendor",""):"");refresh();js("window.savedPayment()");
+        }catch(java.time.format.DateTimeParseException e){notice("Check the payment date and time.");}catch(ArithmeticException|NumberFormatException e){notice("Enter a valid amount with up to 2 decimal places.");}catch(IllegalArgumentException e){notice(e.getMessage());}catch(Exception e){notice("Could not save. Check the fields and try again.");}}
+        @JavascriptInterface public void saveVendor(String json){try{JSONObject j=new JSONObject(json);String name=j.getString("name").trim(),category=j.getString("category");if(name.isEmpty()||name.length()>200||!db.hasCategory(category))throw new IllegalArgumentException();if(j.optLong("id",0)==0)db.addVendor(name,category);else db.updateVendor(j.getLong("id"),name,category);refresh();js("window.savedVendor()");}catch(Exception e){notice("Check the name. Another vendor may already use it.");}}
+        @JavascriptInterface public void deletePayment(long id){runOnUiThread(()->new AlertDialog.Builder(MainActivity.this).setTitle("Delete payment?").setMessage("This removes the saved expense record.").setNegativeButton("Keep",null).setPositiveButton("Delete",(a,b)->{db.delete(id);refresh();js("window.deletedPayment()");}).show());}
+        @JavascriptInterface public void exportBackup(){runOnUiThread(()->{try{backupText=db.backup().toString(2);Intent i=new Intent(Intent.ACTION_CREATE_DOCUMENT);i.setType("application/json");i.addCategory(Intent.CATEGORY_OPENABLE);i.putExtra(Intent.EXTRA_TITLE,"upi-ledger-"+LocalDate.now()+".json");startActivityForResult(i,11);}catch(Exception e){notice("Could not prepare backup.");}});}
+        @JavascriptInterface public void restoreBackup(){runOnUiThread(()->{Intent i=new Intent(Intent.ACTION_OPEN_DOCUMENT);i.setType("*/*");i.addCategory(Intent.CATEGORY_OPENABLE);startActivityForResult(i,12);});}
+        @JavascriptInterface public void exit(){runOnUiThread(()->finish());}
+    }
+    private void readReceipt(Uri uri){if(importing){notice("Already reading a screenshot.");return;}importing=true;js("window.setReading(true)");worker.execute(()->{try{InputImage image=InputImage.fromFilePath(this,uri);recognizer.process(image).addOnSuccessListener(result->{importing=false;js("window.setReading(false)");try{String raw=ReceiptText.ordered(result);if(raw.trim().isEmpty()){notice("No readable text. Try a clearer screenshot.");return;}ReceiptParser.Draft d=ReceiptParser.parse(raw);JSONObject j=new JSONObject();j.put("vendor",d.vendor);j.put("originalVendor",d.vendor);LedgerDb.Vendor v=db.resolve(d.vendor);if(v!=null)j.put("vendor",v.name);j.put("category",v!=null?v.category:ReceiptParser.suggest(d.vendor));j.put("amount",d.paise>0?BigDecimal.valueOf(d.paise,2).toPlainString():"");j.put("date",d.date);j.put("time",d.time);j.put("reference",d.reference);j.put("source",d.source);j.put("status",d.status);j.put("amountNeedsReview",d.amountNeedsReview);j.put("raw",raw);js("window.openImport("+j+")");}catch(Exception e){notice("Could not prepare receipt. Please try again.");}}).addOnFailureListener(e->{importing=false;js("window.setReading(false)");notice("Could not read screenshot. Try another image or enter manually.");});}catch(Exception e){importing=false;js("window.setReading(false)");notice("Could not open this image. Choose it again.");}});}
+    @Override protected void onActivityResult(int request,int result,Intent data){super.onActivityResult(request,result,data);if(result!=RESULT_OK||data==null||data.getData()==null)return;Uri uri=data.getData();if(request==10){readReceipt(uri);return;}
+        if(request==11){try(OutputStream out=getContentResolver().openOutputStream(uri,"wt")){if(out==null||backupText==null)throw new IOException();out.write(backupText.getBytes(StandardCharsets.UTF_8));backupText=null;notice("Backup exported.");}catch(Exception e){notice("Export failed. Try again.");}}
+        if(request==12)new AlertDialog.Builder(this).setTitle("Replace current records?").setMessage("Restore replaces all payments and vendors. Export current records first if you need them.").setNegativeButton("Cancel",null).setPositiveButton("Restore",(d,w)->worker.execute(()->{try(InputStream in=getContentResolver().openInputStream(uri)){if(in==null)throw new IOException();ByteArrayOutputStream bytes=new ByteArrayOutputStream();byte[] buffer=new byte[8192];int n;while((n=in.read(buffer))!=-1){bytes.write(buffer,0,n);if(bytes.size()>10*1024*1024)throw new IOException();}db.restore(new JSONObject(bytes.toString("UTF-8")));refresh();notice("Backup restored.");}catch(Exception e){notice("Invalid backup. Existing records were kept.");}})).show();
+    }
+}

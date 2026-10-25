@@ -1,0 +1,55 @@
+name: Android build
+
+on:
+  push:
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: android-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          persist-credentials: false
+      - name: Set up Java
+        uses: actions/setup-java@v6
+        with:
+          distribution: temurin
+          java-version: '21'
+      - name: Set up Android SDK
+        uses: android-actions/setup-android@v4
+      - name: Install build SDK
+        run: sdkmanager "platforms;android-37.0" "build-tools;36.0.0"
+      - name: Check spending-analysis code
+        run: |
+          node --check app/src/main/assets/ui/ui.js
+          node --check app/src/main/assets/ui/subscriptions.js
+          node tests/model.test.cjs
+      - name: Build, test and lint
+        run: |
+          chmod +x gradlew
+          ./gradlew --no-daemon testDebugUnitTest lintDebug assembleDebug assembleDebugAndroidTest
+      - name: Save debug APK
+        uses: actions/upload-artifact@v7
+        with:
+          name: upi-ledger-debug
+          path: app/build/outputs/apk/debug/app-debug.apk
+          if-no-files-found: error
+          retention-days: 7
+      - name: Save validation reports
+        if: always()
+        uses: actions/upload-artifact@v7
+        with:
+          name: validation-reports
+          path: app/build/reports/
+          if-no-files-found: ignore
+          retention-days: 7

@@ -1,0 +1,3 @@
+<manifest xmlns:android="http://schemas.android.com/apk/res/android">
+    <instrumentation android:name="in.upiledger.app.LedgerChecks" android:targetPackage="in.upiledger.app" android:label="Local integration checks"/>
+</manifest>
