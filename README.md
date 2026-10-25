@@ -1,6 +1,6 @@
 # UPI Ledger
 
-Current version: **0.2.2** Ã‚Â· Monthly subscriptions update.
+Current version: **0.2.2** - Monthly subscriptions update.
 
 A personal Android expense tracker that turns shared payment receipts into organized spending records.
 
@@ -24,9 +24,9 @@ Share a BHIM or Google Pay receipt image to **UPI Ledger**, review the extracted
 
 ## Monthly subscriptions
 
-Open **Subscriptions ÃƒÂ¢Ã¢â‚¬Â Ã¢â‚¬â„¢ Create subscription** and enter a name such as Spotify, monthly price and next renewal date. No screenshot is needed. The vendor is the subscription name and the category is **Subscription**.
+Open **Subscriptions > Create subscription** and enter a name such as Spotify, monthly price and next renewal date. No screenshot is needed. The vendor is the subscription name and the category is **Subscription**.
 
-On opening or resuming the app, due renewals become debit records on Home and Payments, dated to the scheduled renewal. Missed months are caught up; repeated openings do not duplicate them. An **Auto** label identifies these bookkeeping entries. Days 29ÃƒÂ¢Ã¢â€šÂ¬Ã¢â‚¬Å“31 use the last day of a shorter month and return to the original renewal day afterward.
+On opening or resuming the app, due renewals become debit records on Home and Payments, dated to the scheduled renewal. Missed months are caught up; repeated openings do not duplicate them. An **Auto** label identifies these bookkeeping entries. Days 29-31 use the last day of a shorter month and return to the original renewal day afterward.
 
 **Cancel subscription** stops future entries in Ledger and retains history. It does not cancel the real service or its bank autopay. Ledger neither moves money nor verifies bank settlement. Changes to the plan's amount affect future entries; historical payments stay as saved.
 
@@ -100,7 +100,7 @@ Uninstalling deletes local records. Export a backup first. Backup files contain 
 
 This is a prototype, not a bank reconciliation service. Saving assumes a successful outgoing payment; the app does not verify settlement or reconcile refunds.
 
-The ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¹ glyph can be recognized as `7`. The parser compares available receipt amounts and uses character-size evidence to help distinguish currency glyphs from digits. When readings conflict or remain ambiguous, the amount stays blank for manual entry. Genuine amounts such as ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¹740 and ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¹7,400 are covered by regression tests. Always review extracted values before saving; existing records are not corrected automatically by an update.
+The rupee symbol (₹) can be recognized as `7`. The parser compares available receipt amounts and uses character-size evidence to help distinguish currency glyphs from digits. When readings conflict or remain ambiguous, the amount stays blank for manual entry. Genuine amounts such as ₹740 and ₹7,400 are covered by regression tests. Always review extracted values before saving; existing records are not corrected automatically by an update.
 
 Reports reflect only the payments saved in the app. Spending prompts identify patterns rather than deciding which purchases were necessary.
 

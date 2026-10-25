@@ -165,7 +165,7 @@ def app_preview():
         d.rounded_rectangle((650, yy, 670, yy+20), radius=6, fill='#7ba68b')
         d.text((690, yy-8), text, font=font(29), fill=INK)
         yy += 31
-    paragraph(d, 'Sample interface preview â€¢ synthetic spending data\nActual appearance varies by device.', 650, 945, 790, 22, MUTED, False, 9)
+    paragraph(d, 'Sample interface preview - synthetic spending data\nActual appearance varies by device.', 650, 945, 790, 22, MUTED, False, 9)
     im.save(OUT/'app-preview.png', optimize=True)
 
 
