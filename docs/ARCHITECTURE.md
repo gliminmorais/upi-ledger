@@ -25,3 +25,9 @@ Explicit readable currency values take priority. Otherwise, the parser compares 
 ## Monthly renewal bookkeeping
 
 Schema version 3 adds subscriptions and links each generated payment to its plan and scheduled due date. The unique plan/date index and a transaction around posting/advancing the date prevent duplicate renewals. Opening/resuming the app posts active due schedules using the stored monthly amount, service-name vendor and Subscription category. There is no scheduler service or bank integration. Cancellation deactivates the plan without deleting historical debits. Backups include schedules and links and still accept versions 1 and 2.
+
+## Budgets and reports (0.3.0)
+
+SQLite schema 4 adds a budgets table keyed by calendar month and category. Limits and expenses use integer paise. Migration creates the table without rewriting existing records. Backup version 4 includes budgets; restore continues to accept versions 1-3.
+
+Reports use a user-selected inclusive date range. CSV is UTF-8 with a BOM, quoted fields and escaping of formula-leading text. Native Android PdfDocument renders the local report with page breaks. Both exports use Android Create Document so the user chooses the destination without broad storage permissions. Reports contain saved structured fields; no receipt images or raw OCR text are included.

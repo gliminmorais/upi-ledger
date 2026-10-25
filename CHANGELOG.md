@@ -1,5 +1,13 @@
 # Changelog
 
+## 0.3.0
+
+- Monthly category budgets with remaining and overspend indicators.
+- Date-range CSV export for Excel, with UTF-8 and quoted fields.
+- Local PDF reports with category totals, budgets and paginated payments.
+- Schema 4 migration retains payments/subscriptions; backups include budgets and accept versions 1-3.
+- Emulator checks cover budget persistence, migration, restore rollback, CSV escaping and multi-page PDF output.
+
 ## 0.2.2
 
 - Restrict date extraction to actual month names so receipt status text cannot hide the payment date.

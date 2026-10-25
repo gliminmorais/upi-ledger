@@ -47,3 +47,7 @@ python -m http.server 8766 --bind 127.0.0.1 --directory app/src/main/assets/ui
 Open `http://127.0.0.1:8766/index.html?demo=1`. Sample edits are temporary; Android receipt import and backup operations are unavailable in the browser. Omit `?demo=1` to inspect empty states.
 
 Subscription checks cover monthly posting, catch-up, cancellation, month-end/leap-year dates, duplicate renewal prevention, category/vendor fields, and backup compatibility.
+
+## Budget and report checks
+
+ReportChecks uses an isolated database to verify monthly budget update/removal, schema 3 upgrade, version 4 backup round-trip, version 3 compatibility and restore rollback. It checks CSV quoting/formula escaping/exact decimals and generates multi-page and empty PDFs on Android. LedgerChecks also opens the budget editor, saves a limit and verifies remaining amounts and both export formats in the offline WebView.

@@ -11,8 +11,8 @@ public final class LedgerDb extends SQLiteOpenHelper {
     public static class Vendor { public long id; public String name, category; }
     public static class Entry { public long id, vendorId, paise; public String vendor, category, date, time, remarks, reference, source; }
     public static class Subscription {public long id,vendorId,paise;public String name,vendor,category,nextDue,remarks;public int renewalDay;public boolean active;}
-    public LedgerDb(Context c) { super(c, "ledger.db", null, 3); }
-    LedgerDb(Context c,String testDatabase) { super(c,testDatabase,null,3); }
+    public LedgerDb(Context c) { super(c, "ledger.db", null, 4); }
+    LedgerDb(Context c,String testDatabase) { super(c,testDatabase,null,4); }
     @Override public void onConfigure(SQLiteDatabase db) { db.setForeignKeyConstraintsEnabled(true); }
     @Override public void onCreate(SQLiteDatabase db) {
         createCategories(db);
@@ -20,7 +20,7 @@ public final class LedgerDb extends SQLiteOpenHelper {
         db.execSQL("CREATE TABLE aliases (alias TEXT PRIMARY KEY COLLATE NOCASE, vendor_id INTEGER NOT NULL REFERENCES vendors(id))");
         db.execSQL("CREATE TABLE entries (id INTEGER PRIMARY KEY, vendor_id INTEGER NOT NULL REFERENCES vendors(id), paise INTEGER NOT NULL CHECK(paise>0), category TEXT NOT NULL, day TEXT NOT NULL, time TEXT NOT NULL, remarks TEXT NOT NULL, reference TEXT NOT NULL, source TEXT NOT NULL)");
         db.execSQL("CREATE UNIQUE INDEX unique_reference ON entries(reference) WHERE reference <> ''");
-        createSubscriptions(db);
+        createSubscriptions(db);createBudgets(db);
     }
     private void createSubscriptions(SQLiteDatabase db){
         ContentValues category=new ContentValues();category.put("name","Subscription");db.insertWithOnConflict("categories",null,category,SQLiteDatabase.CONFLICT_IGNORE);
@@ -30,6 +30,10 @@ public final class LedgerDb extends SQLiteOpenHelper {
         if(!columns.contains("subscription_due"))db.execSQL("ALTER TABLE entries ADD COLUMN subscription_due TEXT NOT NULL DEFAULT ''");
         db.execSQL("CREATE UNIQUE INDEX IF NOT EXISTS unique_subscription_due ON entries(subscription_id,subscription_due) WHERE subscription_id IS NOT NULL");
     }
+    public static class Budget {public String month,category;public long paise;}
+    private void createBudgets(SQLiteDatabase db){db.execSQL("CREATE TABLE IF NOT EXISTS budgets (month TEXT NOT NULL,category TEXT NOT NULL REFERENCES categories(name),paise INTEGER NOT NULL CHECK(paise>0 AND paise<=100000000000),PRIMARY KEY(month,category))");}
+    public List<Budget> budgets(){List<Budget> out=new ArrayList<>();try(Cursor c=getReadableDatabase().rawQuery("SELECT month,category,paise FROM budgets ORDER BY month,category",null)){while(c.moveToNext()){Budget b=new Budget();b.month=c.getString(0);b.category=c.getString(1);b.paise=c.getLong(2);out.add(b);}}return out;}
+    public void saveBudget(String month,String category,long paise){java.time.YearMonth.parse(month);if(!hasCategory(category)||paise<0||paise>100000000000L)throw new IllegalArgumentException("Choose a category and a valid budget.");if(paise==0){getWritableDatabase().delete("budgets","month=? AND category=?",new String[]{month,category});return;}ContentValues v=new ContentValues();v.put("month",month);v.put("category",category);v.put("paise",paise);getWritableDatabase().insertWithOnConflict("budgets",null,v,SQLiteDatabase.CONFLICT_REPLACE);}
     private void createCategories(SQLiteDatabase db) {
         db.execSQL("CREATE TABLE categories (name TEXT PRIMARY KEY COLLATE NOCASE NOT NULL)");
         for(String name:CATEGORIES){ContentValues v=new ContentValues();v.put("name",name);db.insertOrThrow("categories",null,v);}
@@ -41,7 +45,7 @@ public final class LedgerDb extends SQLiteOpenHelper {
     }
     @Override public void onUpgrade(SQLiteDatabase db, int oldV, int newV) {
         if(oldV==1){createCategories(db);retainUsedCategories(db);}
-        if(oldV<3)createSubscriptions(db);
+        if(oldV<3)createSubscriptions(db);if(oldV<4)createBudgets(db);
     }
     private void validateCategoryName(String name){if(name==null||name.trim().isEmpty()||name.length()>60||!name.equals(name.trim())||name.equals("__create__"))throw new IllegalArgumentException("Use a category name with 1–60 characters.");}
     public List<String> categories(){List<String> out=new ArrayList<>();try(Cursor c=getReadableDatabase().rawQuery("SELECT name FROM categories ORDER BY CASE WHEN name='Uncategorized' THEN 0 ELSE 1 END,name COLLATE NOCASE",null)){while(c.moveToNext())out.add(c.getString(0));}return out;}
@@ -133,21 +137,21 @@ public final class LedgerDb extends SQLiteOpenHelper {
     }
     public void delete(long id) {getWritableDatabase().delete("entries","id=?",new String[]{""+id});}
     public JSONObject backup() throws JSONException {
-        JSONObject root=new JSONObject();root.put("version",3);
-        for(String table:new String[]{"categories","vendors","aliases","subscriptions","entries"}) {
+        JSONObject root=new JSONObject();root.put("version",4);
+        for(String table:new String[]{"categories","vendors","aliases","subscriptions","entries","budgets"}) {
             JSONArray rows=new JSONArray();
             try(Cursor c=getReadableDatabase().rawQuery("SELECT * FROM "+table,null)) { while(c.moveToNext()) {JSONObject row=new JSONObject();for(int i=0;i<c.getColumnCount();i++) row.put(c.getColumnName(i),c.isNull(i)?JSONObject.NULL:c.getType(i)==Cursor.FIELD_TYPE_INTEGER?c.getLong(i):c.getString(i));rows.put(row);} }
             root.put(table,rows);
         } return root;
     }
     public void restore(JSONObject root) throws JSONException {
-        int version=root.getInt("version");if(version<1||version>3) throw new JSONException("Unsupported backup version");
+        int version=root.getInt("version");if(version<1||version>4) throw new JSONException("Unsupported backup version");
         SQLiteDatabase db=getWritableDatabase();db.beginTransaction();
         try {
-            db.delete("entries",null,null);db.delete("aliases",null,null);db.delete("subscriptions",null,null);db.delete("vendors",null,null);
+            db.delete("budgets",null,null);db.delete("entries",null,null);db.delete("aliases",null,null);db.delete("subscriptions",null,null);db.delete("vendors",null,null);
             db.delete("categories",null,null);
             if(version==1)for(String name:CATEGORIES){ContentValues v=new ContentValues();v.put("name",name);db.insertOrThrow("categories",null,v);}
-            for(String table:version==3?new String[]{"categories","vendors","aliases","subscriptions","entries"}:version==2?new String[]{"categories","vendors","aliases","entries"}:new String[]{"vendors","aliases","entries"}) {
+            for(String table:version==4?new String[]{"categories","vendors","aliases","subscriptions","entries","budgets"}:version==3?new String[]{"categories","vendors","aliases","subscriptions","entries"}:version==2?new String[]{"categories","vendors","aliases","entries"}:new String[]{"vendors","aliases","entries"}) {
                 JSONArray rows=root.getJSONArray(table);
                 for(int i=0;i<rows.length();i++) {JSONObject row=rows.getJSONObject(i);ContentValues cv=new ContentValues();Iterator<String> keys=row.keys();while(keys.hasNext()) {String key=keys.next();Object value=row.get(key);if(value==JSONObject.NULL)cv.putNull(key);else if(value instanceof Number) cv.put(key,((Number)value).longValue());else cv.put(key,value.toString());}db.insertOrThrow(table,null,cv);}
             }
@@ -162,6 +166,7 @@ public final class LedgerDb extends SQLiteOpenHelper {
                 if(sub.name.trim().isEmpty()||sub.name.length()>200||!sub.category.equals("Subscription")||!sub.vendor.equals(sub.name)||sub.paise<=0||sub.renewalDay<1||sub.renewalDay>31||date.getDayOfMonth()!=Math.min(sub.renewalDay,date.lengthOfMonth()))throw new JSONException("Invalid subscription");
             }
             try(Cursor c=db.rawQuery("SELECT subscription_due FROM entries WHERE subscription_id IS NOT NULL",null)){while(c.moveToNext())java.time.LocalDate.parse(c.getString(0));}
+            for(Budget b:budgets()){java.time.YearMonth.parse(b.month);if(!hasCategory(b.category)||b.paise<=0||b.paise>100000000000L)throw new JSONException("Invalid budget");}
             db.setTransactionSuccessful();
         } finally {db.endTransaction();}
     }

@@ -1,6 +1,6 @@
 # UPI Ledger
 
-Current version: **0.2.2** - Monthly subscriptions update.
+Current version: **0.3.0** - Monthly budgets and spending reports.
 
 A personal Android expense tracker that turns shared payment receipts into organized spending records.
 
@@ -21,6 +21,14 @@ Share a BHIM or Google Pay receipt image to **UPI Ledger**, review the extracted
 - Export and restore JSON backups, including custom categories and vendors.
 - Use a translucent glass-style interface with reduced-motion support.
 - Create monthly subscriptions manually; record due renewals automatically when Ledger opens.
+
+## Monthly budgets and exports
+
+Open **Insights > Monthly budgets > Manage** (or Settings > Monthly budgets). Choose a month, category and rupee limit. The card shows saved spending, remaining money or overspend. Limits belong to individual calendar months; set zero to remove a limit. Changing a transaction category updates the matching budget totals.
+
+Use **Export spending report** in Insights or Settings. Select start/end dates and choose **CSV (opens in Excel)** or **PDF report**, then choose where Android saves the file. CSV includes each payment's date, time, vendor, category, debit amount, remarks, transaction ID and source. PDF includes totals, category summaries, budgets and paginated payment details. Partial-month budget comparisons use only the dates in the report. Automatic subscription entries are included.
+
+JSON backups now include budgets. Existing version 1-3 backups still restore. CSV and PDF are reports; use the JSON backup when moving or restoring Ledger data.
 
 ## Monthly subscriptions
 

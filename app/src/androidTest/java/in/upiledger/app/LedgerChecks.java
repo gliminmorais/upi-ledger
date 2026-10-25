@@ -32,7 +32,7 @@ public final class LedgerChecks extends Instrumentation {
         Bundle result=new Bundle();
         getTargetContext().deleteDatabase("integration-tests.db");
         try(LedgerDb db=new LedgerDb(getTargetContext(),"integration-tests.db")) {
-            SubscriptionChecks.run(getTargetContext());
+            SubscriptionChecks.run(getTargetContext());ReportChecks.run(getTargetContext());
             LedgerDb.Entry first=entry("Food","111111111111");db.save(first,false,"");
             db.save(entry("Education & stationery","222222222222"),false,"Dynamic checkout");
             check(db.resolve("Swiggy Instamart").category.equals("Food"),"Override changed vendor default");
@@ -95,8 +95,14 @@ public final class LedgerChecks extends Instrumentation {
             JSONObject invalid=new JSONObject();invalid.put("vendor","Native Test");invalid.put("amount","0.001");invalid.put("date","2026-10-24");invalid.put("time","12:30");invalid.put("category","Food");
             int originalSize=db.entries().size();bridge.savePayment(invalid.toString());check(db.entries().size()==originalSize,"Bridge accepted fractional paise");
             invalid.put("amount","10.50");invalid.put("remarks","Glass editor test");bridge.savePayment(invalid.toString());check(db.entries().size()==originalSize+1,"Bridge save failed");
+            check(evaluate(web,"document.querySelector('[data-action=insights]').click();document.body.innerText.includes('Monthly budgets')").equals("true"),"Budget section missing");
+            check(evaluate(web,"document.querySelector('[data-action=budgets]').click();!!document.querySelector('#budgetForm')").equals("true"),"Budget editor missing");
+            JSONObject budget=new JSONObject();budget.put("month",java.time.LocalDate.now().toString().substring(0,7));budget.put("category","Food");budget.put("amount","50.00");bridge.saveBudget(budget.toString());
+            check(evaluate(web,"document.body.innerText.includes('remaining')").equals("true"),"Budget remaining did not render");
+            check(evaluate(web,"document.querySelector('[data-action=report]').click();document.querySelector('#reportForm [name=format]').options.length===2").equals("true"),"CSV/PDF export options missing");
+            evaluate(web,"closeSheet();true");
             runOnMainSync(()->activity.finish());
-            result.putString("stream","PASS: vendor overrides, aliases, duplicate IDs, remarks, backup rollback, generated receipt OCR examples, offline glass UI, navigation, editor controls and native save validation.");finish(-1,result);
+            result.putString("stream","PASS: vendor overrides, aliases, duplicate IDs, remarks, backup rollback, generated receipt OCR examples, offline glass UI, navigation, editor controls, monthly budgets, CSV/PDF export and native save validation.");finish(-1,result);
         }catch(Throwable e){result.putString("stream","FAIL: "+e.toString());finish(0,result);}
     }
 }
